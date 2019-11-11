@@ -1,0 +1,10 @@
+{
+  "name": "art-test-package",
+  "version": "1.0.0",
+  "description": "for testing purpose",
+  "scripts": {
+    "test": "echo \"Error: no test specified\""
+  },
+  "author": "",
+  "license": "ISC"
+}
