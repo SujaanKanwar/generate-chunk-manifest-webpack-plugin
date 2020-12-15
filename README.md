@@ -39,6 +39,12 @@ module.exports = {
 
 ```
 
+## 1.1.0
+
+Adds support for prefetch and preload with webpack
+
+For webpack prefetch and preload refer https://webpack.js.org/guides/code-splitting/#prefetchingpreloading-modules
+
 ## License
 
 This library is licensed under the MIT License.
