@@ -38,6 +38,10 @@ module.exports = {
 }
 
 ```
+## 2.0.0
+
+Adds support for webpack 5.x and html-weback-plugin > 4.x
+
 
 ## 1.1.0
 
