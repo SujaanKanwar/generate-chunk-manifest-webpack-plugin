@@ -1,12 +1,12 @@
 /* globals describe:false, it:false, expect:false */
 
-import webpack from "webpack";
-import HTMLWebpackPlugin from "html-webpack-plugin";
-const CleanWebpackPlugin = require("clean-webpack-plugin");
-import path from "path";
 import fs from "fs-extra";
+import HTMLWebpackPlugin from "html-webpack-plugin";
+import path from "path";
+import webpack from "webpack";
 import merge from "webpack-merge";
 import GenerateChunkManifestHtmlWebpackPlugin from "../src";
+const CleanWebpackPlugin = require("clean-webpack-plugin");
 
 const distPath = path.resolve(__dirname, "./ui-package/dist");
 const chunkManifestPath = path.resolve(distPath, "chunk-manifest.json");
@@ -92,7 +92,7 @@ describe("inline-chunks-webpack gets initialized", () => {
     webpack(webpackOptions, (err) => {
       expect(err).toBe(null);
       const chunksInject = fs.readJsonSync(chunkManifestPath);
-      expect(chunksInject).toHaveProperty("0");
+      expect(chunksInject).toHaveProperty("test_ui-package_app_lazyfile_js");
       expect(Object.keys(chunksInject).length).toEqual(1);
       done();
     });
@@ -114,7 +114,7 @@ describe("inline-chunks-webpack gets initialized", () => {
       /*
        * in production mode chunk indexing starts with 1 instead of 0
        * */
-      expect(chunksInject).toHaveProperty("1");
+      expect(chunksInject).toHaveProperty("749");
       expect(Object.keys(chunksInject).length).toEqual(1);
       done();
     });

@@ -8,8 +8,11 @@ const chalk = require("chalk");
  * An instance of this class should be added in the list
  * of plugins
  *
- * This plugin writes asset-manifest.json and asset-inject-manifest.json
- * file which are used by the uploader and dev server plugin.
+ * This plugin writes chunk-manifest.json and injects a reference to it into
+ * index.html. This enables chunks ids to kept in a separate variable than in
+ * the same vendor or app file, so that the vendor or app hash id does not
+ * change if there is no change in the file but there is a change in the chunk
+ * file
  *
  * @type {module.GenerateChunkManifestHtmlWebpackPlugin}
  */
@@ -53,10 +56,13 @@ module.exports = class GenerateChunkManifestHtmlWebpackPlugin {
         const {manifestFilename, manifestVariable, chunkManifestVariable} = this;
 
         compiler.hooks.compilation.tap("compilation", (compilation) => {
+            const hooks = this.getHtmlWebpackPluginHooks(compiler, compilation);
+            const addAssetTagsHook = hooks.alterAssetTags;
+            const writeManifestFileHook = hooks.beforeAssetTagGeneration;
 
-            if (compilation.hooks.htmlWebpackPluginAlterAssetTags) {
-                compilation.hooks.htmlWebpackPluginAlterAssetTags.tapAsync(
-                    "html-webpack-plugin-alter-asset-tags",
+            if (addAssetTagsHook) {
+                addAssetTagsHook.tapAsync(
+                    "GenerateChunkManifestHtmlWebpackPlugin-add-asset-tags",
                     (htmlPluginData, callback) => {
                         const asset = compilation.assets[manifestFilename];
                         const json = (asset && asset.source()) || JSON.stringify({});
@@ -67,9 +73,13 @@ module.exports = class GenerateChunkManifestHtmlWebpackPlugin {
                                 type: "text/javascript",
                             },
                             innerHTML: `window["${manifestVariable}"]=${json}`,
+                            voidTag: false,
+                            meta: {
+                                plugin: "generate-chunk-manifest-webpack-plugin",
+                            }
                         };
 
-                        htmlPluginData.body.unshift(newTag);
+                        htmlPluginData.assetTags.scripts.unshift(newTag);
 
                         callback(null, htmlPluginData);
                     }
@@ -78,9 +88,9 @@ module.exports = class GenerateChunkManifestHtmlWebpackPlugin {
                 GenerateChunkManifestHtmlWebpackPlugin.htmlWebpackPluginWarning();
             }
 
-            if (compilation.hooks.htmlWebpackPluginBeforeHtmlGeneration) {
-                compilation.hooks.htmlWebpackPluginBeforeHtmlGeneration.tapAsync(
-                    "html-webpack-plugin-before-html-generation",
+            if (writeManifestFileHook) {
+                writeManifestFileHook.tapAsync(
+                    "GenerateChunkManifestHtmlWebpackPlugin-write-manifest-file",
                     (htmlPluginData, callback) => {
                         const asset = compilation.assets[manifestFilename];
 
@@ -112,6 +122,21 @@ module.exports = class GenerateChunkManifestHtmlWebpackPlugin {
      */
     applyDependencyPlugins(compiler) {
         this.plugins.forEach((plugin) => plugin.apply.call(plugin, compiler));
+    }
+
+      /**
+     * Returns the hooks for the current compilation
+     *
+     * @param {object} compiler - represents the fully configured Webpack environment.
+     * @param {object} compilation - the current compilation.
+     */
+    getHtmlWebpackPluginHooks(compiler, compilation) {
+        // Must use the same HtmlWebpackPlugin class the compiler uses or hooks won't
+        // be executed. See https://github.com/jantimon/html-webpack-plugin/issues/1091
+        const [HtmlWebpackPlugin] = compiler.options.plugins
+            .filter((plugin) => plugin.constructor.name === "HtmlWebpackPlugin")
+            .map((plugin) => plugin.constructor);
+        return HtmlWebpackPlugin?.getHooks(compilation);
     }
 
     /**
